@@ -3,6 +3,9 @@
     "description": "Reporting tool for munki",
     "type": "project",
     "license": "MIT",
+    "config": {
+        "optimize-autoloader": true
+    },
     "require-dev": {
         "squizlabs/php_codesniffer": "^2.5"
     },
