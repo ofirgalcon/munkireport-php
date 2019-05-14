@@ -1,6 +1,6 @@
 FROM php:7.3-apache
 
-ENV APP_DIR /var/munkireport
+ENV APP_DIR=/var/munkireport
 
 RUN apt-get update && \
     apt-get install --no-install-recommends -y libldap2-dev \
@@ -15,9 +15,9 @@ RUN apt-get update && \
 RUN docker-php-ext-configure ldap --with-libdir=lib/x86_64-linux-gnu/ && \
     docker-php-ext-install -j$(nproc) curl pdo_mysql soap ldap zip
 
-ENV COMPOSER_ALLOW_SUPERUSER 1
-ENV COMPOSER_HOME /tmp
-ENV COMPOSER_VERSION 1.8.0
+ENV COMPOSER_ALLOW_SUPERUSER=1
+ENV COMPOSER_HOME=/tmp
+ENV COMPOSER_VERSION=1.8.0
 
 RUN curl --silent --fail --location --retry 3 --output /tmp/installer.php --url https://raw.githubusercontent.com/composer/getcomposer.org/72bb6f65aa902c76c7ca35514f58cf79a293657d/web/installer \
  && php -r " \
@@ -32,10 +32,10 @@ RUN curl --silent --fail --location --retry 3 --output /tmp/installer.php --url 
  && composer --ansi --version --no-interaction \
  && rm -rf /tmp/* /tmp/.htaccess
 
-ENV SITENAME MunkiReport
-ENV MODULES ard, bluetooth, disk_report, munkireport, managedinstalls, munkiinfo, network, security, warranty
-ENV INDEX_PAGE ""
-ENV AUTH_METHODS NOAUTH
+ENV SITENAME=MunkiReport
+ENV MODULES=ard, bluetooth, disk_report, munkireport, managedinstalls, munkiinfo, network, security, warranty
+ENV INDEX_PAGE=""
+ENV AUTH_METHODS=NOAUTH
 
 COPY . $APP_DIR
 
