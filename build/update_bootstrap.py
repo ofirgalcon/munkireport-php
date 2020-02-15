@@ -29,6 +29,12 @@ def write_override(fileName, bodyColor, backgroundColor):
         f.write("   background-color: %s;\n" % backgroundColor)
         f.write("}\n")
 
+def create_dir_if_not_exists(theme):
+    item_dir = os.path.join(basedir, 'assets', 'themes', theme)
+    if not os.path.isdir(item_dir):
+        os.mkdir(item_dir)
+    return item_dir
+
 
 bootstrap_base_url='https://raw.githubusercontent.com/twbs/bootstrap/master/dist/'
 bootswatch_url='https://bootswatch.com/api/4.json'
@@ -37,7 +43,8 @@ basedir = os.path.join(basedir, 'public')
 
 print 'Getting bootstrap files'
 css = curl(bootstrap_base_url + 'css/bootstrap.min.css')
-with open(os.path.join(basedir, 'assets', 'themes', 'Default', 'bootstrap.min.css'),"w+") as f:
+theme_directory = create_dir_if_not_exists('Default')
+with open(os.path.join(theme_directory, 'bootstrap.min.css'),"w+") as f:
     f.write(css)
 js = curl(bootstrap_base_url + 'js/bootstrap.min.js')
 with open(os.path.join(basedir, 'assets', 'js', 'bootstrap.min.js'),"w+") as f:
@@ -50,9 +57,7 @@ jsondata = curl(bootswatch_url)
 data = json.loads(jsondata)
 
 for item in data['themes']:
-    item_dir = os.path.join(basedir, 'assets', 'themes', item['name'])
-    if not os.path.isdir(item_dir):
-        os.mkdir(item_dir)
+    item_dir = create_dir_if_not_exists(item['name'])
     
     # Get css
     print 'Updating %s' % item['name']
