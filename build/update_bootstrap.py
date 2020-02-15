@@ -35,7 +35,6 @@ def create_dir_if_not_exists(theme):
         os.mkdir(item_dir)
     return item_dir
 
-
 bootstrap_base_url='https://raw.githubusercontent.com/twbs/bootstrap/master/dist/'
 bootswatch_url='https://bootswatch.com/api/4.json'
 basedir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
