@@ -31,8 +31,9 @@ def write_override(fileName, bodyColor, backgroundColor):
 
 
 bootstrap_base_url='https://raw.githubusercontent.com/twbs/bootstrap/master/dist/'
-bootswatch_url='https://bootswatch.com/api/3.json'
+bootswatch_url='https://bootswatch.com/api/4.json'
 basedir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+basedir = os.path.join(basedir, 'public')
 
 print 'Getting bootstrap files'
 css = curl(bootstrap_base_url + 'css/bootstrap.min.css')

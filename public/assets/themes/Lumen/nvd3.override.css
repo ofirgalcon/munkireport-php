@@ -1,9 +1,9 @@
 text, svg .nvd3.nv-pie .nv-pie-title, .nvd3 .nv-discretebar .nv-groups text, .nvd3 .nv-multibarHorizontal .nv-groups text{
-   fill: #555555;
+   fill: #222;
 }
-.nvd3 .nv-axis path{stroke: #555555}
-.nvd3.nv-pie path{stroke: #ffffff}
+.nvd3 .nv-axis path{stroke: #222}
+.nvd3.nv-pie path{stroke: #fff}
 .nvtooltip, .nvtooltip table{
-   color: #555555;
-   background-color: #ffffff;
+   color: #222;
+   background-color: #fff;
 }
