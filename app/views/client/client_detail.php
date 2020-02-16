@@ -45,36 +45,34 @@ $modules->addWidgets(
 
 			<div class="input-group">
 
-				<div class="input-group-btn">
-					<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+				<div class="input-group-prepend">
+					<button type="button" class="btn btn-outline-secondary dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
 						<span data-i18n="show" class="hidden-sm hidden-xs"></span>
 						<i class="fa fa-list fa-fw"></i>
 					</button>
-					<ul class="dropdown-menu client-tabs" role="tablist">
+					<div class="dropdown-menu client-tabs" role="tablist">
 							<?php foreach($tab_list as $name => $data):?>
 
-								<li>
-									<a href="#<?php echo $name?>" data-toggle="tab"><span data-i18n="<?php echo $data['i18n']?>"></span>
-									<?php if(isset($data['badge'])):?>
-									 <span id="<?php echo $data['badge']?>" class="badge">0</span>
-									<?php endif?>
-									</a>
-								</li>
+								<a class="dropdown-item" href="#<?php echo $name?>" data-toggle="tab"><span data-i18n="<?php echo $data['i18n']?>"></span>
+								<?php if(isset($data['badge'])):?>
+									<span id="<?php echo $data['badge']?>" class="badge badge-secondary">0</span>
+								<?php endif?>
+								</a>
 
 							<?php endforeach?>
 
-						</ul>
+						</div>
 				</div><!-- /btn-group -->
 
 				<input type="text" class="form-control mr-computer_name_input" readonly>
 
-				<div class="input-group-btn">
-					<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+				<div class="input-group-append">
+					<button type="button" class="btn btn-outline-secondary dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
 						<span data-i18n="remote_control" class="hidden-sm hidden-xs"></span>
 						<i class="fa fa-binoculars fa-fw"></i>
 					</button>
-					<ul class="dropdown-menu dropdown-menu-right" role="tablist" id="client_links">
-					</ul>
+					<div class="dropdown-menu dropdown-menu-right" role="tablist" id="client_links">
+					</div>
 				</div><!-- /btn-group -->
 
 			</div>
@@ -106,4 +104,15 @@ $modules->addWidgets(
 <script src="<?php echo conf('subdirectory'); ?>assets/js/marked.min.js"></script>
 <script src="<?php echo conf('subdirectory'); ?>assets/js/munkireport.comment.js"></script>
 
+<script>
+
+	// Ugly hack to clear the active class from the dropdown
+	$('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+		if (e.target) {
+			$(e.target).parent().find('a').removeClass('active');
+			$(e.target).addClass('active');
+		}
+	})
+  
+</script>
 <?php $this->view('partials/foot'); ?>

@@ -178,7 +178,7 @@ $(document).on('appReady', function(e, lang) {
 		// Remote control links
 		$.getJSON( appUrl + '/clients/get_links', function( links ) {
 			$.each(links, function(prop, val){
-				$('#client_links').append('<li><a href="'+(val.replace(/%s/, machineData.remote_ip).replace(/%remote_ip/, machineData.remote_ip).replace(/%u/, username).replace(/%network_ip_v4/, machineData.ipv4ip).replace(/%network_ip_v6/, machineData.ipv6ip))+'">'+i18n.t('remote_control')+' ('+prop+')</a></li>');
+				$('#client_links').append('<a class="dropdown-item" href="'+(val.replace(/%s/, machineData.remote_ip).replace(/%remote_ip/, machineData.remote_ip).replace(/%u/, username).replace(/%network_ip_v4/, machineData.ipv4ip).replace(/%network_ip_v6/, machineData.ipv6ip))+'">'+i18n.t('remote_control')+' ('+prop+')</a>');
 			});
 		});
 
@@ -296,13 +296,13 @@ $(document).on('appReady', function(e, lang) {
 
 	$(document).bind('keydown', 'right', function(){
 
-		var activeTab = $('.client-tabs').find('li.active')
+		var activeTab = $('.client-tabs').find('a.active')
 		if(activeTab.length < 1){
-			activeTab = $('.client-tabs li:first');
+			activeTab = $('.client-tabs a:first');
 		}
-		var nextTab = activeTab.next('li:not(.divider)')
+		var nextTab = activeTab.next('a:not(.divider)')
 		if(nextTab.length < 1){
-			nextTab = $('.client-tabs li:first');
+			nextTab = $('.client-tabs a:first');
 		}
 
 		$(nextTab).find('a').click();
@@ -311,13 +311,13 @@ $(document).on('appReady', function(e, lang) {
 
 	$(document).bind('keydown', 'left', function(){
 
-		var activeTab = $('.client-tabs').find('li.active')
+		var activeTab = $('.client-tabs').find('a.active')
 		if(activeTab.length < 1){
-			activeTab = $('.client-tabs li:first');
+			activeTab = $('.client-tabs a:first');
 		}
-		var prevTab = activeTab.prev('li:not(.divider)')
+		var prevTab = activeTab.prev('a:not(.divider)')
 		if(prevTab.length < 1){
-			prevTab = $('.client-tabs li:not(.divider):last');
+			prevTab = $('.client-tabs a:not(.divider):last');
 		}
 
 		$(prevTab).find('a').click();

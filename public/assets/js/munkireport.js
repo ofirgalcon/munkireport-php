@@ -88,7 +88,7 @@ $( document ).ready(function() {
         mr.sortMenu('ul.client-tabs');
 
         // Put summary on top
-        $('ul.client-tabs').prepend($('ul.client-tabs a[href="#summary"]').closest('li'));
+        $('div.client-tabs').prepend($('div.client-tabs a[href="#summary"]'));
 
         // Check if current locale is available (FIXME: check loaded locale)
         if( ! $('.locale a[data-i18n=\'nav.lang.' + i18n.lng() + '\']').length)
@@ -183,7 +183,7 @@ var updateHash = function(e){
 					.on('show.bs.tab', function(){
 						// We have to remove the active class from the
 						// previous tab manually, unfortunately
-						$('.client-tabs li').removeClass('active');
+						$('.client-tabs a').removeClass('active');
 					})
 					.on('shown.bs.tab', updateHash)
 					.text(conf.linkTitle)));
