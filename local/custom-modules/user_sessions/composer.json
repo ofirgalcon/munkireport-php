@@ -1,8 +1,0 @@
-{
-    "name": "munkireport/user_sessions",
-    "description": "User_sessions module for munkireport.",
-    "license": "MIT",
-    "require": {
-        "php":"^7.0"
-    }
-}
