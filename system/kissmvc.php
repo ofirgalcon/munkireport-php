@@ -105,21 +105,6 @@ class Controller extends KISS_Controller
         // There is no matching rule, you're authorized!
         return true;
     }
-
-    /**
-     * Connect to database when authorized
-     *
-     * Create a database connection when user is authorized
-     *
-     * @return type
-     * @throws conditon
-     **/
-    protected function connectDBWhenAuthorized()
-    {
-        if($this->authorized()){
-            $this->connectDB();
-        }
-    }
 }
 
 //===============================================================
@@ -397,38 +382,27 @@ class Module_controller extends Controller
     // Module, override in child object
     protected $module_path;
 
-    public function get_script($filename = '')
+    public function get_script($name = '')
     {
-      $this->dumpModuleFile($filename, 'scripts', 'text/plain');
-    }
-    
-    public function js($filename = '')
-    {
-        $this->dumpModuleFile($filename . '.js', 'js', 'application/javascript');
-    }
-    
-    private function dumpModuleFile($filename, $directory, $content_type)
-    {
-        // Check if dir exists
-        $dir_path = $this->module_path . '/' . $directory . '/';
-        if (is_readable($dir_path)) {
-        // Get filenames in module dir (just to be safe)
-            $files = array_diff(scandir($dir_path), ['..', '.']);
+        // Check if script dir exists
+        if (is_readable($this->module_path . '/scripts/')) {
+        // Get scriptnames in module scripts dir (just to be safe)
+            $scripts = array_diff(scandir($this->module_path . '/scripts/'), array('..', '.'));
         } else {
-            $files = [];
+            $scripts = array();
         }
 
-        $file_path = $dir_path . basename($filename);
+        $script_path = $this->module_path . '/scripts/' . basename($name);
 
-        if (! in_array($filename, $files) or ! is_readable($file_path)) {
+        if (! in_array($name, $scripts) or ! is_readable($script_path)) {
         // Signal to curl that the load failed
             header("HTTP/1.0 404 Not Found");
-            printf('File %s is not available', $filename);
+            printf('Script %s is not available', $name);
             return;
         }
 
         // Dump the file
-        header("Content-Type: application/javascript");
-        echo file_get_contents($file_path);
+        header("Content-Type: text/plain");
+        echo file_get_contents($script_path);
     }
 }

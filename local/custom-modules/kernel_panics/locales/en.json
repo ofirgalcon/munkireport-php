@@ -1,0 +1,18 @@
+{
+    "kernel_panics": "Kernel Panics",
+    "report": "Kernel Panics Report",
+    "crash_file": "Panic Log",
+    "process_name": "Process Name",
+    "date": "Date",
+    "macos_version": "macOS Version",
+    "kernel_version": "Kernel Version",
+    "model_id": "Model",
+    "type": "Panic Type",
+    "anonymous_uuid": "Anonymous UUID",
+    "full_text": "Full Panic Log",
+    "caller": "Panic Caller",
+    "extensions_backtrace": "Extensions in Backtrace",
+    "non_apple_loaded_kexts": "3rd Party Extensions",
+    "view_panic": "View Panic Log",
+    "view": "View"
+}

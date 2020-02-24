@@ -19,8 +19,6 @@ class Auth extends Controller
             redirect('error/client_error/426'); // Switch protocol
         }
 
-        $this->connectDB();
-
         $this->authHandler = new AuthHandler;
     }
 
@@ -96,11 +94,7 @@ class Auth extends Controller
             }
         }
 
-        $data = [
-            // Prevent XSS
-            'login' => htmlspecialchars($login, ENT_QUOTES, 'UTF-8'),
-            'url' => url("auth/login/$return")
-        ];
+        $data = array('login' => $login, 'url' => url("auth/login/$return"));
 
         $obj = new View();
         $obj->view('auth/login', $data);

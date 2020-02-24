@@ -73,25 +73,21 @@ class Database extends Controller
             $this->appendModuleMigrations($dirs);
 
             $obj = new View();
-            
-            $input = new \Symfony\Component\Console\Input\StringInput('');
-            $outputSymfony = new \Symfony\Component\Console\Output\BufferedOutput();
-            $outputStyle = new \Illuminate\Console\OutputStyle($input, $outputSymfony);
 
             try {
-                $migrationFiles = $migrator->setOutput($outputStyle)->run($dirs, ['pretend' => false]);
+                $migrationFiles = $migrator->run($dirs, ['pretend' => false]);
 
                 $obj->view('json', [
                     'msg' => [
                         'files' => $migrationFiles,
-                        'notes' => explode(PHP_EOL, $outputSymfony->fetch()),
+                        'notes' => $migrator->getNotes()
                     ]
                 ]);
             } catch (\PDOException $exception) {
                 $obj->view('json', [
                     'msg' => [
                         'error' => $exception->getMessage(),
-                        'notes' => explode(PHP_EOL, $outputSymfony->fetch()),
+                        'notes' => $migrator->getNotes()
                     ]
                 ]);
             }

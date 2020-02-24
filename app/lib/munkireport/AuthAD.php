@@ -26,11 +26,6 @@ class AuthAD extends AbstractAuth
     {
         $this->login = $login;
         if ($login && $password) {
-
-            if( ! defined('LDAP_OPT_PROTOCOL_VERSION')){
-                error('LDAP authentication failed: PHP is missing the LDAP extension');
-                return false;
-            }    
           
             if (conf('debug'))
             {

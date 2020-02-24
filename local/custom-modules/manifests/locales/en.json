@@ -1,0 +1,27 @@
+{
+    "link": "Manifests Link",
+    "listing": {
+        "title": "Munki Manifests"
+    },
+    "report": {
+        "title": "Munki Manifests Report"
+    },
+    "widget": {
+        "title": "Included Manifests",
+        "catalog": "Munki Catalogs",
+        "catalog_graph": "Munki Catalogs"
+    },
+    "manifest_name": "Manifest Name",
+    "catalogs": "Catalogs",
+    "included_manifests": "Included Manifests",
+    "managed_uninstalls": "Managed Uninstalls",
+    "optional_installs": "Optional Installs",
+    "display_name": "Display Name",
+    "managed_updates": "Managed Updates",
+    "featured_items": "Featured Items",
+    "client_tab": "Munki Manifests",
+    "managed_installs": "Managed Installs",
+    "condition_check": "Condition",
+    "conditional_items": "Conditional Items",
+    "no_data": "No manifest data"
+}

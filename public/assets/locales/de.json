@@ -104,7 +104,7 @@
         "clients": "Clients",
         "comment": "Kommentar",
         "hour": "Clients pro Stunde",
-        "panel_title": "Clientaktivität im letzten __number__ Tage",
+        "panel_title": "Clientaktivität im letzten Monat",
         "report": "Client Report",
         "tab": {
             "summary": "Zusammenfassung"

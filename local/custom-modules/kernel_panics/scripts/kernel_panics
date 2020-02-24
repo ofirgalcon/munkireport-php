@@ -1,0 +1,243 @@
+#!/usr/bin/python
+# Made by Tuxudo for MunkiReport
+
+import os
+import subprocess
+import sys
+import re
+import glob
+import json
+import uuid
+from datetime import datetime, timedelta, tzinfo
+sys.path.insert(0, '/usr/local/munki')
+
+from munkilib import FoundationPlist
+
+def get_kernel_panics():
+
+    panics = ""
+
+    # Get Kernel Panics
+    for file in os.listdir("/Library/Logs/DiagnosticReports"):
+        if file.startswith("Kernel_") and file.endswith(".panic"):
+            panics = panics + "/Library/Logs/DiagnosticReports/" + file + "\n"
+
+    return panics[:-1]
+
+def get_gpu_panics():
+
+    panics = ""
+
+    # Get GPU Panics
+    for file in os.listdir("/Library/Logs/DiagnosticReports"):
+        if file.startswith("Kernel_") and file.endswith(".gpuRestart"):
+            panics = panics + "/Library/Logs/DiagnosticReports/" + file + "\n"
+
+    return panics[:-1]
+
+def get_ibridge_panics():
+
+    panics = ""
+
+    # Get iBridge Panics
+    if os.path.isdir('/Library/Logs/DiagnosticReports/ProxiedDevice-Bridge'):
+        for file in os.listdir("/Library/Logs/DiagnosticReports/ProxiedDevice-Bridge"):
+            if (file.startswith("panic-full-") and file.endswith(".ips")) or (file.startswith("iBridge-panic") and file.endswith(".bridge")):
+                panics = panics + "/Library/Logs/DiagnosticReports/ProxiedDevice-Bridge/" + file + "\n"
+        return panics[:-1]
+    else:
+        return ""
+
+def process_kernel_panics(panics):
+
+    if panics == "":
+        return []
+
+    out = []
+    for panic in panics.split('\n'):
+        try:
+            with open(panic) as panic_file:
+                panic_entry = {"anonymous_uuid":str(uuid.uuid1()).upper(),"type":"Kernel Panic"}
+
+                for i, item in enumerate(panic_file):
+                    file = open(panic, 'r')
+                    panic_entry['full_text'] = file.read().strip()
+                    file.close()
+
+                    panic_entry['crash_file'] = panic.replace("/Library/Logs/DiagnosticReports/", "")
+
+                    # Get the date       
+                    try:
+                        if i == 2:
+                            date_str = item.strip()
+                            dt_utc = datetime.strptime(date_str.strip(), "%a %b %d %H:%M:%S %Y")
+                            panic_entry['date'] = int((dt_utc - datetime(1970, 1, 1)).total_seconds())
+                    except:
+                        pass
+
+                    if "Anonymous UUID:" in item:
+                        panic_entry['anonymous_uuid'] = item.replace("Anonymous UUID:", "").strip()
+                    elif item.startswith('panic(cpu '):
+                        panic_entry['caller'] = item.split('): ')[1].replace('"', "").strip()
+                    elif "BSD process name corresponding to current thread:" in item:
+                        panic_entry['process_name'] = item.replace("BSD process name corresponding to current thread:", "").strip()
+                    elif "Mac OS version:" in item:
+                        panic_entry['macos_version'] = next(panic_file).strip()
+                    elif "Kernel version:" in item:
+                        panic_entry['kernel_version'] = next(panic_file).strip()
+                    elif "System model name:" in item:
+                        panic_entry['model_id'] = item.replace("System model name:", "").strip()
+                    elif "Kernel Extensions in backtrace:" in item:
+                        extension_inter = next(panic_file).strip()
+                        extensions = extension_inter + "\n"
+                        try:
+                            while extension_inter is not "":
+                                extension_inter = next(panic_file).strip()
+                                extensions = extensions + "   " + extension_inter + "\n"
+                        except:
+                            pass
+                        panic_entry['extensions_backtrace'] = extensions.strip()
+                    elif "loaded kexts:" in item:
+                        loaded_inter = next(panic_file).strip()
+                        if not loaded_inter.startswith('com.apple.'):
+                            loaded_kexts = loaded_inter + "\n"
+                        else:
+                            loaded_kexts = ""
+
+                        try:
+                            while loaded_inter is not "" or false:
+                                loaded_inter = next(panic_file).strip()
+
+                                if not loaded_inter.startswith('com.apple.'):
+                                    loaded_kexts = loaded_kexts + loaded_inter + "\n"
+                                else:
+                                    loaded_kexts = ""
+                        except:
+                            pass
+
+                        if loaded_kexts is not "":
+                            panic_entry['non_apple_loaded_kexts'] = loaded_kexts.strip()
+
+                out.append(panic_entry)
+        except:
+            continue
+    return out
+
+def process_gpu_panics(panics):
+
+    if panics == "":
+        return []
+
+    out = []
+    for panic in panics.split('\n'):
+        try:
+            with open(panic) as panic_file:
+                panic_entry = {"anonymous_uuid":str(uuid.uuid1()).upper(),"type":"GPU Reset"}
+
+                for i, item in enumerate(panic_file):
+                    file = open(panic, 'r')
+                    panic_entry['full_text'] = file.read().strip()
+                    file.close()
+
+                    panic_entry['crash_file'] = panic.replace("/Library/Logs/DiagnosticReports/", "")
+
+                    if "Date/Time:" in item:
+                        date_str = item.replace('Date/Time:', "").strip()
+                        dt_utc = datetime.strptime(date_str.strip(), "%a %b %d %H:%M:%S %Y")
+                        panic_entry['date'] = int((dt_utc - datetime(1970, 1, 1)).total_seconds())
+                    elif "Application:" in item:
+                        panic_entry['process_name'] = item.replace("Application:", "").strip()
+                    elif "OS Version:" in item:
+                        panic_entry['macos_version'] = item.replace("OS Version:", "").strip()
+                    elif "Graphics Hardware:" in item:
+                        panic_entry['model_id'] = item.replace("Graphics Hardware:", "").strip()
+
+                out.append(panic_entry)
+        except:
+            continue
+    return out
+
+def process_ibridge_panics(panics):
+
+    if panics == "":
+        return []
+
+    out = []
+
+    for panic in panics.split('\n'):
+        try:
+            panic_entry = {"anonymous_uuid":str(uuid.uuid1()).upper(),"type":"iBridge Crash"}
+            panic_entry['crash_file'] = panic.replace("/Library/Logs/DiagnosticReports/ProxiedDevice-Bridge/", "")
+
+            file = open(panic, 'r')
+            panic = file.read().strip()
+            file.close()
+
+            panic_entry['full_text'] = panic
+            panic = "["+panic.replace("}\n{", "},{")+"]"
+            panic = json.loads(panic)
+
+            panic_entry['anonymous_uuid'] = panic[1]['incident']
+            panic_entry['caller'] = panic[0]['caused_by']
+            panic_entry['process_name'] = panic[0]['macos_system_state']
+            panic_entry['macos_version'] = panic[1]['build']
+            panic_entry['kernel_version'] = panic[1]['kernel']
+
+            connected = str(panic[1]['date'])                    
+            date_str, tz = connected[:-5], connected[-5:]
+            dt_utc = datetime.strptime(date_str.strip(), "%Y-%m-%d %H:%M:%S.%f")
+            dt = dt_utc.replace(tzinfo=FixedOffset(tz))
+            utc_naive = dt.replace(tzinfo=None) - dt.utcoffset()
+            panic_entry['date'] = int((utc_naive - datetime(1970, 1, 1)).total_seconds())
+
+            out.append(panic_entry)
+        except:
+            continue
+    return out
+
+class FixedOffset(tzinfo):
+    """offset_str: Fixed offset in str: e.g. '-0400'"""
+    def __init__(self, offset_str):
+        sign, hours, minutes = offset_str[0], offset_str[1:3], offset_str[3:]
+        offset = (int(hours) * 60 + int(minutes)) * (-1 if sign == "-" else 1)
+        self.__offset = timedelta(minutes=offset)
+        # NOTE: the last part is to remind about deprecated POSIX GMT+h timezones
+        # that have the opposite sign in the name;
+        # the corresponding numeric value is not used e.g., no minutes
+        '<%+03d%02d>%+d' % (int(hours), int(minutes), int(hours)*-1)
+    def utcoffset(self, dt=None):
+        return self.__offset
+    def tzname(self, dt=None):
+        return self.__name
+    def dst(self, dt=None):
+        return timedelta(0)
+    def __repr__(self):
+        return 'FixedOffset(%d)' % (self.utcoffset().total_seconds() / 60)
+    
+def main():
+    """Main"""
+    # Create cache dir if it does not exist
+    cachedir = '%s/cache' % os.path.dirname(os.path.realpath(__file__))
+    if not os.path.exists(cachedir):
+        os.makedirs(cachedir)
+
+    # Skip manual check
+    if len(sys.argv) > 1:
+        if sys.argv[1] == 'manualcheck':
+            print 'Manual check: skipping'
+            exit(0)
+
+    # Set the encoding
+    reload(sys)
+    sys.setdefaultencoding('utf8')
+
+    # Get panics
+    result = process_kernel_panics(get_kernel_panics())+process_gpu_panics(get_gpu_panics())+process_ibridge_panics(get_ibridge_panics())
+
+    # Write panic results to cache
+    output_plist = os.path.join(cachedir, 'kernel_panics.plist')
+    FoundationPlist.writePlist(result, output_plist)
+#    print FoundationPlist.writePlistToString(result)
+
+if __name__ == "__main__":
+    main()

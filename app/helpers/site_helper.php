@@ -3,7 +3,7 @@
 use munkireport\models\Machine_group, munkireport\lib\Modules, munkireport\lib\Dashboard;
 
 // Munkireport version (last number is number of commits)
-$GLOBALS['version'] = '5.2.0.3922';
+$GLOBALS['version'] = '4.1.2.3760';
 
 // Return version without commit count
 function get_version()
@@ -129,15 +129,6 @@ function find_driver($connection, $driver)
     return true;
   }
   return false;
-}
-
-function dumpQuery($queryobj){
-    dd(
-        vsprintf(
-            str_replace(['?'], ['\'%s\''], $queryobj->toSql()),
-            $queryobj->getBindings()
-        )
-    );
 }
 
 function add_mysql_opts(&$conn){
@@ -351,13 +342,9 @@ function authorized_for_serial($serial_number)
 function get_machine_group($serial_number = '')
 {
     if (! isset($GLOBALS['machine_groups'][$serial_number])) {
-        
-        $machine_group = Reportdata_model::select('machine_group')
-            ->where('serial_number', $serial_number)
-            ->pluck('machine_group')
-            ->first();
-        if ($machine_group) {
-            $GLOBALS['machine_groups'][$serial_number] = $machine_group;
+        $reportdata = new Reportdata_model;
+        if ($reportdata->retrieveOne('serial_number=?', $serial_number)) {
+            $GLOBALS['machine_groups'][$serial_number] = $reportdata->machine_group;
         } else {
             $GLOBALS['machine_groups'][$serial_number] = 0;
         }
@@ -443,38 +430,20 @@ function get_filtered_groups()
  **/
 function store_event($serial, $module = '', $type = '', $msg = 'no_message', $data = '')
 {
-    Event_model::updateOrCreate(
-        [
-            'serial_number' => $serial,
-            'module' => $module,
-        ],
-        [
-            'type' => $type,
-            'msg' => $msg,
-            'data' => $data,
-            'timestamp' => time(),
-        ]
-    );
+    $evtobj = new Event_model($serial, $module);
+    $evtobj->store($type, $msg, $data);
 }
 
 /**
  * Delete event for client
  *
- * @param string $serial_number serial number
+ * @param string $serial serial number
  * @param string $module reporting module
  **/
-function delete_event($serial_number, $module = '')
+function delete_event($serial, $module = '')
 {
-    if (! authorized_for_serial($serial_number)) {
-        return false;
-    }
-
-    $where[] = ['serial_number', $serial_number];
-    if ($module) {
-        $where[] = ['module', $module];
-    }
-
-    return Event_model::where($where)->delete();
+    $evtobj = new Event_model();
+    $evtobj->reset($serial, $module);
 }
 
 // Truncate string

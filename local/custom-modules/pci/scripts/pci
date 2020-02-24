@@ -1,0 +1,124 @@
+#!/usr/bin/python
+# Author tuxudo
+
+import subprocess
+import os
+import plistlib
+import sys
+
+sys.path.insert(0, '/usr/local/munki')
+
+from munkilib import FoundationPlist
+
+def get_pci_info():
+    '''Uses system profiler to get PCI info for this machine.'''
+    cmd = ['/usr/sbin/system_profiler', 'SPPCIDataType', '-xml']
+    proc = subprocess.Popen(cmd, shell=False, bufsize=-1,
+                            stdin=subprocess.PIPE,
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    (output, unused_error) = proc.communicate()
+
+    try:
+        plist = plistlib.readPlistFromString(output)
+        # system_profiler xml is an array
+        sp_dict = plist[0]
+        items = sp_dict['_items']
+        return items
+    except Exception:
+        return {}
+
+def flatten_pci_info(array, localization):
+    '''Un-nest PCI devices, return array with objects with relevant keys'''
+    out = []
+    for obj in array:
+        # Return nothing if machine doesn't have PCI
+        if 'PCI' in obj and obj['PCI'] == "no_hardware":
+            return {}
+
+        device = {}
+        for item in obj:
+            # Don't process the bus itself
+            if item == '_name' and "pci_bus" in obj[item]:
+                continue  
+            elif item == '_items':
+                out = out + flatten_pci_info(obj['_items'], localization)
+                
+            elif item == '_name':
+                device['name'] = obj[item]
+            elif item == 'sppci_device-id':
+                device['device_id'] = obj[item]
+            elif item == 'sppci_device_type':
+                try:
+                    device['device_type'] = localization[obj[item]].strip()
+                except Exception:
+                    device['device_type'] = obj[item]
+            elif item == 'sppci_driver_installed':
+                device['driver_installed'] = to_bool(obj[item])
+            elif item == 'sppci_link-speed':
+                device['link_speed'] = obj[item]
+            elif item == 'sppci_link-width':
+                device['link_width'] = obj[item]
+            elif item == 'sppci_msi':
+                device['msi'] = to_bool(obj[item])
+            elif item == 'sppci_name':
+                device['device_name'] = obj[item]
+            elif item == 'sppci_revision-id':
+                device['revision_id'] = obj[item]
+            elif item == 'sppci_slot_name':
+                device['slot_name'] = obj[item]
+            elif item == 'sppci_subsystem-id':
+                device['subsystem_id'] = obj[item]
+            elif item == 'sppci_subsystem-vendor-id':
+                device['subsystem_vendor_id'] = obj[item]
+            elif item == 'sppci_vendor-id':
+                device['vendor_id'] = obj[item]
+
+        # Only append device if it has a name
+        if 'name' in device:
+            out.append(device)
+            
+    return out
+
+def to_bool(s):
+    if s == True:
+        return 1
+    else:
+        return 0 
+
+def main():
+    """Main"""
+    # Create cache dir if it does not exist
+    cachedir = '%s/cache' % os.path.dirname(os.path.realpath(__file__))
+    if not os.path.exists(cachedir):
+        os.makedirs(cachedir)
+
+    # Skip manual check
+    if len(sys.argv) > 1:
+        if sys.argv[1] == 'manualcheck':
+            print 'Manual check: skipping'
+            exit(0)
+
+    # Set the encoding
+    reload(sys)
+    sys.setdefaultencoding('utf8')
+
+    # Read in English localizations from SystemProfiler
+    if os.path.isfile('/System/Library/SystemProfiler/SPPCIReporter.spreporter/Contents/Resources/en.lproj/Localizable.strings'):
+        localization = FoundationPlist.readPlist('/System/Library/SystemProfiler/SPPCIReporter.spreporter/Contents/Resources/en.lproj/Localizable.strings')
+    elif os.path.isfile('/System/Library/SystemProfiler/SPPCIReporter.spreporter/Contents/Resources/English.lproj/Localizable.strings'):
+        localization = FoundationPlist.readPlist('/System/Library/SystemProfiler/SPPCIReporter.spreporter/Contents/Resources/English.lproj/Localizable.strings')
+    else:
+        localization = {}
+
+    # Get results
+    result = dict()
+    info = get_pci_info()
+    result = flatten_pci_info(info, localization)
+
+    # Write pci results to cache
+    output_plist = os.path.join(cachedir, 'pci.plist')
+    plistlib.writePlist(result, output_plist)
+#    print plistlib.writePlistToString(result)
+
+if __name__ == "__main__":
+    main()

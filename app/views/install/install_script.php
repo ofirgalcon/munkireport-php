@@ -2,14 +2,15 @@
 ?>#!/bin/bash
 
 BASEURL="<?php echo conf('webhost') . conf('subdirectory'); ?>"
-INSTALLROOT=""
-MUNKIPATH="/usr/local/munkireport/"
-CACHEPATH="${MUNKIPATH}scripts/cache/"
-POSTFLIGHT_CACHEPATH="${MUNKIPATH}scripts/cache/"
+MUNKIPATH="/usr/local/munki/" # TODO read munkipath from munki config
+CACHEPATH="${MUNKIPATH}preflight.d/cache/"
+POSTFLIGHT_CACHEPATH="${MUNKIPATH}postflight.d/cache/"
 PREFPATH="/Library/Preferences/MunkiReport"
+PREFLIGHT=1
 PREF_CMDS=( ) # Pref commands array
 TARGET_VOLUME=''
 CURL=("<?php echo implode('" "', conf('curl_cmd'))?>")
+PREFLIGHT_SCRIPT="<?php echo conf('preflight_script'); ?>"
 POSTFLIGHT_SCRIPT="<?php echo conf('postflight_script'); ?>"
 REPORT_BROKEN_CLIENT_SCRIPT="<?php echo conf('report_broken_client_script'); ?>"
 # Exit status
@@ -34,6 +35,7 @@ Usage: ${PROG} [OPTIONS]
             Current value: ${MUNKIPATH}
   -p PATH   Path to preferences file (without the .plist extension)
             Current value: ${PREFPATH}
+  -n        Do not run preflight script after the installation
   -i PATH   Create a full installer at PATH
   -c ID     Change pkg id to ID
   -h        Display this help message
@@ -41,7 +43,8 @@ Usage: ${PROG} [OPTIONS]
   -v VERS   Override version number
 
 Example:
-  * Install munkireport client scripts into the default location.
+  * Install munkireport client scripts into the default location and run the
+    preflight script.
 
         $PROG
 
@@ -49,7 +52,7 @@ Example:
     packaged.
 
         $PROG -b ${BASEURL} \\
-              -m ~/Desktop/munkireport-$VERSION/usr/local/munkireport/ \\
+              -m ~/Desktop/munkireport-$VERSION/usr/local/munki/ \\
               -p ~/Desktop/munkireport-$VERSION/Library/Preferences/MunkiReport \\
               -n
 
@@ -74,7 +77,7 @@ function resetreportpref {
 	PREF_CMDS=( "${PREF_CMDS[@]}" "defaults write \"\${TARGET}\"${PREFPATH} ReportItems -dict" )
 }
 
-while getopts b:m:p:r:c:v:i:h flag; do
+while getopts b:m:p:r:c:v:i:nh flag; do
 	case $flag in
 		b)
 			BASEURL="$OPTARG"
@@ -99,11 +102,15 @@ while getopts b:m:p:r:c:v:i:h flag; do
 			# Create temp directory
 			INSTALLTEMP=$(mktemp -d -t mrpkg)
 			INSTALLROOT="$INSTALLTEMP"/install_root
-			MUNKIPATH="$INSTALLROOT"/usr/local/munkireport/
+			MUNKIPATH="$INSTALLROOT"/usr/local/munki/
 			TARGET_VOLUME='$3'
 			PREFPATH="/Library/Preferences/MunkiReport"
+			PREFLIGHT=0
 			BUILDPKG=1
 
+			;;
+		n)
+			PREFLIGHT=0
 			;;
 		h|?)
 			usage
@@ -128,46 +135,50 @@ if [ "$(defaults read "${PREFPATH}" UseMunkiAdditionalHttpHeaders 2>/dev/null)" 
 	for header in "${ADDITIONAL_HTTP_HEADERS[@]}"; do CURL+=("-H" "$header"); done
 fi
 
-echo "# Preparing ${MUNKIPATH}"
+echo "Preparing ${MUNKIPATH}"
 mkdir -p "${MUNKIPATH}munkilib"
-mkdir -p "${MUNKIPATH}scripts"
-mkdir -p "${INSTALLROOT}/Library/MunkiReport/Logs"
-
-# Create preflight.d symlinks
-rm -rf "${MUNKIPATH}preflight.d" &&  ln -s "scripts" "${MUNKIPATH}preflight.d"
-rm -rf "${MUNKIPATH}postflight.d" && ln -s "scripts" "${MUNKIPATH}postflight.d"
-
-mkdir -p "${INSTALLROOT}/usr/local/munki"
-mkdir -p "${INSTALLROOT}/Library/LaunchDaemons"
-
-#Normalize BASEURL so it has a trailing slash.
-if [[ ${BASEURL: -1} != "/" ]]
-then
-    BASEURL="${BASEURL}/"
-fi
 
 echo "BaseURL is ${BASEURL}"
-TPL_BASE="${BASEURL}assets/client_installer/payload"
+TPL_BASE="${BASEURL}/assets/client_installer/"
 
-echo "# Retrieving munkireport scripts"
-SCRIPTS=$("${CURL[@]}" "${BASEURL}index.php?/install/get_paths")
+echo "Retrieving munkireport scripts"
 
-for SCRIPT in $SCRIPTS; do
-	echo "${INSTALLROOT}${SCRIPT}"
-	"${CURL[@]}" "${TPL_BASE}${SCRIPT}" --output "${INSTALLROOT}${SCRIPT}" || ERR=1
-done
+cd ${MUNKIPATH}
+"${CURL[@]}" "${TPL_BASE}preflight" --output "${PREFLIGHT_SCRIPT}" \
+  "${TPL_BASE}postflight" --output "${POSTFLIGHT_SCRIPT}" \
+  "${TPL_BASE}report_broken_client" --output "${REPORT_BROKEN_CLIENT_SCRIPT}" \
+    && "${CURL[@]}" "${TPL_BASE}purl" -o "${MUNKIPATH}munkilib/purl.py" \
+    && "${CURL[@]}" "${TPL_BASE}reportcommon" -o "${MUNKIPATH}munkilib/reportcommon.py" \
+	&& "${CURL[@]}" "${TPL_BASE}phpserialize" -o "${MUNKIPATH}munkilib/phpserialize.py"
 
-if [ $ERR = 1 ]; then
-	echo "Failed to download all required components! Cleaning up.."
-	for SCRIPT in $SCRIPTS; do 
-		rm -f "${INSTALLROOT}${SCRIPT}"
-	done
+if [ "${?}" != 0 ]
+then
+	echo "Failed to download all required components!"
+	rm -f "${MUNKIPATH}"{${PREFLIGHT_SCRIPT},${POSTFLIGHT_SCRIPT},${REPORT_BROKEN_CLIENT_SCRIPT}} \
+		"${MUNKIPATH}"munkilib/reportcommon.py
 	exit 1
 fi
 
-chmod a+x "${INSTALLROOT}/usr/local/munki/"{${POSTFLIGHT_SCRIPT},${REPORT_BROKEN_CLIENT_SCRIPT}}
-chmod a+x "${INSTALLROOT}/usr/local/munkireport/munkireport-runner"
+chmod a+x "${MUNKIPATH}"{${PREFLIGHT_SCRIPT},${POSTFLIGHT_SCRIPT},${REPORT_BROKEN_CLIENT_SCRIPT}}
 
+# Create preflight.d + download scripts
+mkdir -p "${MUNKIPATH}preflight.d"
+cd "${MUNKIPATH}preflight.d"
+${CURL[@]} "${TPL_BASE}submit.preflight" --remote-name
+
+if [ "${?}" != 0 ]
+then
+	echo "Failed to download preflight script!"
+	rm -f "${MUNKIPATH}preflight.d/submit.preflight"
+else
+	chmod a+x "${MUNKIPATH}preflight.d/submit.preflight"
+fi
+
+# Create postflight.d
+mkdir -p "${MUNKIPATH}postflight.d"
+
+# Create preflight_abort.d
+mkdir -p "${MUNKIPATH}preflight_abort.d"
 
 echo "Configuring munkireport"
 #### Configure Munkireport ####
@@ -191,7 +202,7 @@ echo '+ Installing <?php echo $scriptname; ?>'
 # Store munkipath when building a package
 if [ $BUILDPKG = 1 ]; then
 	STOREPATH=${MUNKIPATH}
-	MUNKIPATH='$3/usr/local/munkireport/'
+	MUNKIPATH='$3/usr/local/munki/'
 	CACHEPATH="\$3${CACHEPATH}"
 	POSTFLIGHT_CACHEPATH="\$3${POSTFLIGHT_CACHEPATH}"
 fi
@@ -220,7 +231,7 @@ fi
 if [ $BUILDPKG = 0 ]; then
 	eval "$UNINSTALLS"
 	# Remove munkireport version file
-	rm -f "${MUNKIPATH}"munkireport-*.*.*
+	rm -f "${MUNKIPATH}munkireport-"*
 fi
 
 if [ $ERR = 0 ]; then
@@ -242,8 +253,6 @@ if [ $ERR = 0 ]; then
         cat >>$SCRIPTDIR/postinstall <<EOF
 if [[ "\$3" == "/" ]]; then
     TARGET=""
-	/bin/launchctl unload /Library/LaunchDaemons/com.github.munkireport.runner.plist
-    /bin/launchctl load /Library/LaunchDaemons/com.github.munkireport.runner.plist
 else
     TARGET="\$3"
 fi
@@ -284,12 +293,11 @@ EOF
 		touch "${MUNKIPATH}munkireport-${VERSION}"
         defaults write ${PREFPATH} Version ${VERSIONLONG}
 
-		echo 'Loading MunkiReport LaunchDaemon'
-		/bin/launchctl unload /Library/LaunchDaemons/com.github.munkireport.runner.plist &>/dev/null
-		/bin/launchctl load /Library/LaunchDaemons/com.github.munkireport.runner.plist
-
-
 		echo "Installation of MunkiReport v${VERSION} complete."
+		echo 'Running the preflight script for initialization'
+		if [ $PREFLIGHT = 1 ]; then
+			${MUNKIPATH}preflight
+		fi
 
 	fi
 

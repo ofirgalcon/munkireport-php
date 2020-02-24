@@ -1,3 +1,4 @@
+<!-- OFIR -->
 <?php $this->view('partials/head'); ?>
 <br>
 <br>
@@ -15,7 +16,7 @@
 						<fieldset>
 							<legend>
 
-								<?php echo conf('sitename'); ?>
+								<img src="https://www.gal.uk/peanut-icon.png" style=" float: left;margin-right: 10px;margin-top: 3px;" width="24px"><?php echo conf('sitename'); ?>
 
 								<?php if( empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == "off" ): ?>
 

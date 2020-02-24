@@ -43,15 +43,11 @@ class Database
      */
     private function getDSN()
     {
-        extract($this->connection, EXTR_SKIP);
-        
-        switch ($driver) {
+        switch ($this->connection['driver']) {
             case 'sqlite':
-                return "sqlite:{$database}";
+                return "sqlite:{$this->connection['database']}";
             case 'mysql':
-                return isset($port)
-                    ? "mysql:host={$host};port={$port};dbname={$database}"
-                    : "mysql:host={$host};dbname={$database}";
+                return "mysql:host={$this->connection['host']};dbname={$this->connection['database']}";
             default:
                 throw new \Exception("Unknown driver in connection", 1);
         }

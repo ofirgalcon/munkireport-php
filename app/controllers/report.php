@@ -75,9 +75,10 @@ class report extends Controller
 
         // Try to register client and lookup hashes in db
         try {
-            // Register check and group in reportdata   
-            $this->connectDB(); 
-            $this->_register($_POST['serial']);
+            // Register check and group in reportdata
+            $report = new Reportdata_model($_POST['serial']);
+            $report->machine_group = $this->group;
+            $report->register()->save();
 
             //$req_items = unserialize($_POST['items']); //Todo: check if array
             $unserializer = new Unserializer($_POST['items']);
@@ -142,6 +143,7 @@ class report extends Controller
         $unserializer = new Unserializer($_POST['items']);
         $arr = $unserializer->unserialize();
 
+
         if (! is_array($arr)) {
             $this->error("Could not parse items, not a proper serialized file");
         }
@@ -149,11 +151,18 @@ class report extends Controller
         $moduleMgr = new Modules;
 
         foreach ($arr as $name => $val) {
+        // Skip items without data
+            if (! isset($val['data'])) {
+                continue;
+            }
 
-            alert("starting: $name");
+            // Rename legacy InventoryItem to inventory
+            $name = str_ireplace('InventoryItem', 'inventory', $name);
 
-            // All models are lowercase
-            $name = strtolower($name);
+               alert("starting: $name");
+
+               // All models are lowercase
+               $name = strtolower($name);
 
             if (preg_match('/[^\da-z_]/', $name)) {
                 $this->msg("Model has an illegal name: $name");
@@ -168,28 +177,53 @@ class report extends Controller
                 $module = $name;
                 $name = $module . '_model';
             }
-            
-            // Try to load processor
-            if ($moduleMgr->getModuleProcessorPath($module, $processor_path))
+
+            if (! $moduleMgr->getModuleModelPath($module, $model_path))
             {
-                if ($this->runProcessor($module, $processor_path, $_POST['serial'], $val['data']))
-                {
-                    $this->updateHash($_POST['serial'], $module, $val['hash']);
+                $this->msg("Model not found: $name");
+                continue;
+            }
+
+            require_once($model_path);
+
+            // Capitalize classname
+            $classname = '\\'.ucfirst($name);
+
+            if (! class_exists($classname, false)) {
+                $this->msg("Class not found: $classname");
+                continue;
+            }
+
+               // Load model
+            $class = new $classname($_POST['serial']);
+
+            if (! method_exists($class, 'process')) {
+                $this->msg("No process method in: $classname");
+                continue;
+            }
+
+            try {
+                $class->process($val['data']);
+
+                // Store hash
+                $hash = new Hash($_POST['serial'], $module);
+                $hash->hash = $val['hash'];
+                $hash->timestamp = time();
+                $hash->save();
+            } catch (Exception $e) {
+                $this->msg("An error occurred while processing: $classname");
+                $this->msg("Error: " . $e->getMessage());
+            }
+
+               // Handle alerts
+            foreach ($GLOBALS['alerts'] as $type => $list) {
+                foreach ($list as $msg) {
+                    $this->msg("$type: $msg");
                 }
+
+                // Remove alert from array
+                unset($GLOBALS['alerts'][$type]);
             }
-            // Otherwise run model->processor()
-            elseif ($moduleMgr->getModuleModelPath($module, $model_path))
-            {
-                if ($this->runModel($module, $model_path, $_POST['serial'], $val['data']))
-                {
-                    $this->updateHash($_POST['serial'], $module, $val['hash']);
-                }
-            }
-            else
-            {
-                $this->msg("No processor found for: $module");
-            }
-            $this->collectAlerts();
         }
     }
 
@@ -210,8 +244,8 @@ class report extends Controller
         }
 
         // Register check in reportdata
-        $this->connectDB(); 
-        $this->_register($_POST['serial']);
+        $report = new Reportdata_model($_POST['serial']);
+        $report->register()->save();
 
         // Clean POST data
         $data['module'] = isset($_POST['module']) ? $_POST['module'] : 'generic';
@@ -250,102 +284,5 @@ class report extends Controller
     {
         echo serialize(array('error' =>$msg));
         exit();
-    }
-    
-    private function runModel($module, $model_path, $serial_number, $data)
-    {
-        require_once($model_path);
-
-        $name = $module . '_model';
-
-        // Capitalize classname
-        $classname = '\\'.ucfirst($name);
-
-        if (! class_exists($classname, false)) {
-            $this->msg("Class not found: $classname");
-            return False;
-        }
-
-           // Load model
-        $class = new $classname($_POST['serial']);
-
-        if (! method_exists($class, 'process')) {
-            $this->msg("No process method in: $classname");
-            return False;
-        }
-
-        try {
-            $class->process($data);
-            return True;
-        } catch (Exception $e) {
-            $this->msg("An error occurred while processing: $classname");
-            $this->msg("Error: " . $e->getMessage());
-            return False;
-        }
-    }
-    
-    private function runProcessor($module, $processor_path, $serial_number, $data)
-    {
-        require_once($processor_path);
-
-        $name = $module . '_processor';
-
-        // Capitalize classname
-        $classname = '\\'.ucfirst($name);
-
-        if (! class_exists($classname, false)) {
-            $this->msg("Class not found: $classname");
-            return;
-        }
-        try {
-            // Load model
-            $class = new $classname($module, $serial_number);
-
-            if (! method_exists($class, 'run')) {
-                $this->msg("No run method in: $classname");
-                return;
-            }
-            $this->connectDB();
-            $class->run($data);
-            return True;
-        } catch (Exception $e) {
-            $this->msg("An error occurred while processing: $classname");
-            $this->msg("Error: " . $e->getMessage());
-            return False;
-        }
-    }
-    
-    private function updateHash($serial_number, $module, $hashValue)
-    {
-        $hash = new Hash($serial_number, $module);
-        $hash->hash = $hashValue;
-        $hash->timestamp = time();
-        $hash->save();
-    }
-    
-    private function collectAlerts()
-    {
-        // Handle alerts
-        foreach ($GLOBALS['alerts'] as $type => $list) {
-           foreach ($list as $msg) {
-               $this->msg("$type: $msg");
-           }
-           // Remove alert from array
-           unset($GLOBALS['alerts'][$type]);
-        }
-    }
-
-    private function _register($serial_number)
-    {
-        $mylist = [
-            'machine_group' => $this->group,
-            'remote_ip' => getRemoteAddress(),
-            'timestamp' => time(),
-        ];
-
-        $model = Reportdata_model::updateOrCreate(
-            ['serial_number' => $serial_number],
-            $mylist
-        );
     }
 }

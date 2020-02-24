@@ -107,7 +107,7 @@
         "clients": "Clients",
         "comment": "Comments",
         "hour": "Clients per hour",
-        "panel_title": "Client activity in the last __number__ days",
+        "panel_title": "Client activity in the last month",
         "report": "Client Report",
         "tab": {
             "summary": "Summary"
@@ -223,9 +223,9 @@
         "os": {
             "title": "OS Breakdown"
         },
-        "osbuild": {
+	"osbuild": {
             "title": "OS Build Breakdown"
-        },
+	},
         "registered": {
             "title": "Client Registration Over Time"
         },
@@ -234,9 +234,7 @@
             "title": "Uptime"
         }
     },
-    "message": "Message",
     "model": "Model",
-    "module": "Module",
     "mouse": "Mouse",
     "munki": {
         "error": "Munki error: __error__",

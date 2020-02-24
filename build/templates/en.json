@@ -1,14 +1,11 @@
 {
     "link": "MODULE Link",
     "listing": {
-        "title": "MODULE Listing",
-        "item1": "Item number one",
-        "item2": "Item number two"
+        "title": "MODULE Listing"
     },
     "report": {
         "title": "MODULE Report"
     },
-    "title": "MODULE Title",
     "widget": {
         "title": "MODULE Widget"
     }

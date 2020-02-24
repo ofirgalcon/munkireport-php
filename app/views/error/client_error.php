@@ -48,7 +48,7 @@
 			</p>
             
             <p>
-              <?php echo htmlspecialchars($msg, ENT_QUOTES, 'UTF-8') ?>
+            <?php echo $msg ?>
             </p>
 
 		

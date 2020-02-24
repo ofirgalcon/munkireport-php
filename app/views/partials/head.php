@@ -1,3 +1,4 @@
+<!-- OFIR -->
 <!doctype html>
 <html class="no-js" lang="en">
 
@@ -67,7 +68,7 @@
 				<span class="icon-bar"></span>
 				<span class="icon-bar"></span>
 			</button>
-			<a class="navbar-brand" href="<?php echo url(''); ?>"><?php echo conf('sitename'); ?></a>
+			<a class="navbar-brand" href="<?php echo url(''); ?>" style=" font-size: 16px;" ><img src="https://www.gal.uk/Peanut-Icon-64px.png" style=" float: left;margin-right: 8px;" width="22px"><?php echo conf('sitename'); ?></a>
 		</div>
 		<nav class="collapse navbar-collapse bs-navbar-collapse" role="navigation">
 			<ul class="nav navbar-nav">

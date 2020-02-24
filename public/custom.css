@@ -1,0 +1,52 @@
+.dropdown-menu>li>a:active, .dropdown-menu>li>a:focus {
+text-decoration: none;
+color: #ffffff;
+background-color: #272b30;
+}
+
+.tab-btn {
+    font-size: 17px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+}
+
+#bu_units .alert {
+	margin-bottom: 0px;
+	padding-top: 8px;
+    padding-bottom: 10px;
+    font-size: 15px;
+}
+
+#bu_units .panel-body {
+    padding: 0px;
+}
+
+#bu_units .list-group-item {
+    padding: 7px 15px;
+    border: 1px solid rgba(0, 0, 0, 0.25);
+}
+
+#bu_units .panel-title {
+    font-size: 17px;
+}
+
+.alert {
+    padding: 10px;
+    margin-bottom: 0px;
+}
+
+.alert-info {
+    color: #d8d8d8;
+    background-color: #2e343c;
+    border-color: rgba(0,0,0,0.6);
+    margin: -1px;
+}
+
+.img-responsive {
+margin-top: -10px;
+margin-bottom: 0px;
+}
+
+.bootstrap-tagsinput {
+    margin-bottom: 20px;
+}

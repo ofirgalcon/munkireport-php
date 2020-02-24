@@ -1,0 +1,18 @@
+{
+    "clienttab": "Audio Devices",
+    "name": "Name",
+    "device_name": "Device Name",
+    "no_audio": "No Audio Devices",
+    "reporttitle": "Audio Report",
+    "audio": "Audio",
+    "default_audio_output": "Default Output",
+    "default_audio_input": "Default Input",
+    "device_input": "Inputs",
+    "device_output": "Outputs",
+    "device_manufacturer": "Manufacturer",
+    "device_srate": "Sample Rate",
+    "device_transport": "Transport",
+    "input_source": "Input Source",
+    "output_source": "Output Source",
+    "report": "Audio Report"
+}
