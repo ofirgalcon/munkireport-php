@@ -27,7 +27,6 @@ function generateCSPHeader($output, $nonce)
 	$script_src_base = "script-src 'self' https://www.google.com/recaptcha/api.js static.cloudflareinsights.com fonts.gstatic.com fonts.googleapis.com https://www.gstatic.com/recaptcha/ https://ajax.cloudflare.com 'unsafe-eval' ";
 	$script_src_base = $script_src_base . " 'nonce-$nonce_value' ";
 	$object_src = "object-src 'none' ;";
-	$report_uri = "report-uri https://e3b8df61a020ed232398cd7a4421507a.report-uri.com/r/d/csp/reportOnly ;";
 	$base_uri = "base-uri 'self';";  // Add base-uri directive
 
 	// Regular expression to find inline scripts
@@ -48,7 +47,7 @@ function generateCSPHeader($output, $nonce)
 	}
 
 	// Combine all CSP directives
-	$csp_header = "$default_src $img_src $connect_src $frame_ancestors $frame_src $style_src $script_src $object_src $base_uri $report_uri";
+	$csp_header = "$default_src $img_src $connect_src $frame_ancestors $frame_src $style_src $script_src $object_src $base_uri";
 
 	// Add the CSP header
 	header("Content-Security-Policy: $csp_header");
