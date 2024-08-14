@@ -1,3 +1,5 @@
+<?php if( isset($_SESSION['user'])):?>
+
   <div class="container">
 
     <div style="text-align: right; margin: 10px; color: #bbb; font-size: 80%;">
@@ -7,6 +9,8 @@
     </div>
 
   </div>
+  
+<?php endif?>
 
   <!-- Modal -->
   <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
@@ -99,6 +103,8 @@
       //});
   });
   </script>
-
+   <?php
+    ob_end_flush(); // End output buffering and flush the output
+  ?>
 </body>
 </html>
